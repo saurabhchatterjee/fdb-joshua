@@ -145,7 +145,7 @@ def transactional(func):
 def wrap_error(description):
     root = ET.Element("Test")
     ET.SubElement(root, "JoshuaError", {"Severity": "40", "ErrorMessage": description})
-    return ET.tostring(root)
+    return ET.tostring(root) + "\n"
 
 
 def wrap_message(info={}):
@@ -153,7 +153,7 @@ def wrap_message(info={}):
     attribs = {"Severity": "10"}
     attribs.update(info)
     ET.SubElement(root, "JoshuaMessage", attribs)
-    return ET.tostring(root)
+    return ET.tostring(root) + "\n"
 
 
 def get_hostname():
@@ -510,6 +510,8 @@ def _stop_ensemble(tr, ensemble_id, sanity=False):
         )
 
     del tr[dir[ensemble_id]]
+    del tr[dir_ensemble_incomplete[ensemble_id]]
+    del tr[dir_ensemble_incomplete[ensemble_id].range()]
     tr.add(changes, ONE)
 
 
@@ -656,6 +658,7 @@ def should_run_ensemble(tr: fdb.Transaction, ensemble_id: str) -> bool:
             tr.add_read_conflict_key(
                 dir_ensemble_incomplete[ensemble_id]["heartbeat"][max_seed]
             )
+            del tr[dir_ensemble_incomplete[ensemble_id][max_seed]]
             del tr[dir_ensemble_incomplete[ensemble_id][max_seed].range()]
             del tr[dir_ensemble_incomplete[ensemble_id]["heartbeat"][max_seed]]
             return True
@@ -748,6 +751,7 @@ def _insert_results(
     if tr[dir_ensemble_incomplete[ensemble_id][seed]] == None:
         # Test already completed
         return False
+    del tr[dir_ensemble_incomplete[ensemble_id][seed]]
     del tr[dir_ensemble_incomplete[ensemble_id][seed].range()]
     del tr[dir_ensemble_incomplete[ensemble_id]["heartbeat"][seed]]
 
